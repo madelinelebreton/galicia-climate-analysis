@@ -1,0 +1,157 @@
+# annual_precipitation_galicia.R
+# purpose: plot annual precipitation totals for Galicia provinces
+# author: Madeline Lebreton
+# date: 08.06.2026
+
+# -----------------------------
+# SETUP
+# -----------------------------
+rm(list = ls())
+gc() 
+
+# =========================================================
+# AEMET API KEY
+# =========================================================
+aemet_api_key("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtYWRlbGluZS5sZWJyZXRvbkBnbWFpbC5jb20iLCJqdGkiOiJiMWEzODZjMC03ODc3LTQ4ZDktYmI5ZS05MWU1NDljYzQwNTYiLCJpc3MiOiJBRU1FVCIsImlhdCI6MTc3OTk2MjgwMCwidXNlcklkIjoiYjFhMzg2YzAtNzg3Ny00OGQ5LWJiOWUtOTFlNTQ5Y2M0MDU2Iiwicm9sZSI6IiJ9.dQrIldbr6UOQraZpyDnZR9p2obfU9GRHzuRCCBRs2B0")
+
+# =========================================================
+# PACKAGES
+# =========================================================
+
+library(climaemet)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(lubridate)
+library(readr)
+
+# =========================================================
+# STATIONS
+# =========================================================
+
+stations <- data.frame(
+  province = c(
+    "A Coruña",
+    "Lugo",
+    "Ourense",
+    "Pontevedra"
+  ),
+  station = c(
+    "1387",
+    "1505",
+    "1690A",
+    "1484C"
+  )
+)
+
+# =========================================================
+# YEARS TO ANALYZE
+# =========================================================
+
+start_date <- "2019-01-01"
+end_date   <- "2024-12-31"
+
+# =========================================================
+# DOWNLOAD ANNUAL CLIMATOLOGY DATA
+# =========================================================
+
+all_data <- list()
+
+for(i in seq_len(nrow(stations))) {
+
+  cat(
+    "\nDownloading:",
+    stations$province[i],
+    "(",
+    stations$station[i],
+    ")\n"
+  )
+
+  station_data <- aemet_monthly_period(
+    station = stations$station[i],
+    start = 2019,
+    end = 2024
+  )
+
+  station_data$province <- stations$province[i]
+
+  all_data[[i]] <- station_data
+}
+
+df <- bind_rows(all_data)
+
+
+# =========================================================
+# CLEAN DATA
+# =========================================================
+
+df <- df %>%
+  mutate(
+    date = as.Date(paste0(fecha, "-01")),
+    year = year(date),
+    month = month(date),
+    p_mes = as.numeric(gsub(",", ".", p_mes))
+  ) %>%
+  filter(!is.na(year))
+
+# =========================================================
+# AGGREGATE TO ANNUAL TOTALS
+# =========================================================
+
+annual <- df %>%
+  group_by(province, year) %>%
+  summarise(
+    annual_prec_mm = sum(p_mes, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# =========================================================
+# SAVE DATA
+# =========================================================
+
+write_csv(
+  annual,
+  "C:\\Users\\Equipo\\Documents\\ss_ML_local\\galicia-climate-analysis\\outputs\\annual_precipitation_galicia_2019_2024.csv"
+)
+
+# =========================================================
+# PLOT
+# =========================================================
+
+p <- ggplot(
+  annual,
+  aes(
+    x = year,
+    y = annual_prec_mm,
+    color = province
+  )
+) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 3) +
+  scale_x_continuous(
+    breaks = 2019:2024
+  ) +
+  labs(
+    title = "Annual Precipitation Totals in Galicia",
+    subtitle = "Representative AEMET station for each province",
+    x = "Year",
+    y = "Annual precipitation (mm)",
+    color = "Province"
+  ) +
+  theme_minimal(base_size = 14)
+
+print(p)
+
+# =========================================================
+# SAVE FIGURE
+# =========================================================
+
+ggsave(
+  filename = "annual_precipitation_galicia_2019_2024.png",
+  plot = p,
+  width = 10,
+  height = 6,
+  dpi = 300
+)
+
+cat("\nDone.\n")
