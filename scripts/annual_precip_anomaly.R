@@ -17,7 +17,7 @@ library(lubridate)
 # -----------------------------
 # USER INPUTS
 # -----------------------------
-station_id <- "1387" # coruña 
+station_id <- "1387"  # A Coruña station ID 
 start_year <- 1976
 end_year <- 2025  
 
@@ -60,11 +60,39 @@ annual_precip <- precip_monthly %>%
     .groups = "drop"
   )
 
+winter_precip <- precip_monthly %>%
+  filter(month %in% c(12, 1, 2)) %>%
+  group_by(year) %>%
+  summarise(
+    winter_prec_mm = sum(precip),
+    mean_winter_prec_mm = mean(precip),
+    .groups = "drop"
+  )
+
+summer_precip <- precip_monthly %>%
+  filter(month %in% c(6, 7, 8)) %>%
+  group_by(year) %>%
+  summarise(
+    summer_prec_mm = sum(precip),
+    mean_summer_prec_mm = mean(precip),
+    .groups = "drop"
+  )
+
 # -----------------------------
 # LONG-TERM AVERAGE
 # -----------------------------
 mean_precip <- mean(
   annual_precip$annual_prec_mm,
+  na.rm = TRUE
+)
+
+mean_winter_precip <- mean(
+  winter_precip$winter_prec_mm,
+  na.rm = TRUE
+)
+
+mean_summer_precip <- mean(
+  summer_precip$summer_prec_mm,
   na.rm = TRUE
 )
 
@@ -74,6 +102,26 @@ mean_precip <- mean(
 annual_precip <- annual_precip %>%
   mutate(
     anomaly_mm = annual_prec_mm - mean_precip,
+    anomaly_type = ifelse(
+      anomaly_mm >= 0,
+      "Above average",
+      "Below average"
+    )
+  )
+
+winter_precip <- winter_precip %>%
+  mutate(
+    anomaly_mm = winter_prec_mm - mean_winter_precip,
+    anomaly_type = ifelse(
+      anomaly_mm >= 0,
+      "Above average",
+      "Below average"
+    )
+  )
+
+summer_precip <- summer_precip %>%
+  mutate(
+    anomaly_mm = summer_prec_mm - mean_summer_precip,
     anomaly_type = ifelse(
       anomaly_mm >= 0,
       "Above average",
@@ -93,7 +141,7 @@ write_csv(
 # PLOT
 # -----------------------------
 p <- ggplot(
-  annual_precip,
+  winter_precip,
   aes(
     x = year,
     y = anomaly_mm,
@@ -116,12 +164,12 @@ p <- ggplot(
     breaks = seq(1976, 2025, by = 5)
   ) +
   labs(
-    title = "Annual Precipitation Anomalies",
+    title = "Winter Precipitation Anomalies",
     subtitle = paste0(
       "A Coruña (Station 1387)\n",
       "Reference period: 1976–2025\n",
-      "Mean annual precipitation = ",
-      round(mean_precip, 1),
+      "Mean winter precipitation = ",
+      round(mean_winter_precip, 1),
       " mm"
     ),
     x = "Year",
@@ -147,7 +195,7 @@ ggsave(
 )
 
 cat(
-  "\nMean annual precipitation (1976–2025):",
-  round(mean_precip, 1),
+  "\nMean winter precipitation (1976–2025):",
+  round(mean_winter_precip, 1),
   "mm\n"
 )
