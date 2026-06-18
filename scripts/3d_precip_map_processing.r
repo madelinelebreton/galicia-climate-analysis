@@ -1,7 +1,7 @@
 library(terra)
 
 # Load — inspect it first
-r <- rast("C:\\Users\\Equipo\\Downloads\\descarga_clima\\AEMET_precip_avg.tif")
+r <- rast("C:\\Users\\Equipo\\Documents\\ss_ML_local\\galicia-climate-analysis\\data\\processed\\AEMET_precip_avg.tif")
 print(r)         # check CRS, resolution, extent, value range
 plot(r)          # quick sanity check
 res(r)         # check resolution — should be 0.01° (~1 km)
@@ -32,3 +32,41 @@ writeRaster(r_proj, "spain_precip_qgis.tif", overwrite=TRUE)
 
 
 
+# ---------------------------------------------------------
+# Create colorized precipitation raster (light grey → navy)
+# ---------------------------------------------------------
+
+# Normalize precipitation values to 0–1
+r_scaled <- (r_proj - global(r_proj, "min", na.rm=TRUE)[1,1]) /
+            (global(r_proj, "max", na.rm=TRUE)[1,1] -
+             global(r_proj, "min", na.rm=TRUE)[1,1])
+
+# Define endpoint colors
+# Light grey (#E5E5E5)
+grey <- c(229, 229, 229)
+
+# Navy blue (#001F5B)
+navy <- c(0, 31, 91)
+
+# Interpolate RGB channels
+r_red   <- grey[1] + (navy[1] - grey[1]) * r_scaled
+r_green <- grey[2] + (navy[2] - grey[2]) * r_scaled
+r_blue  <- grey[3] + (navy[3] - grey[3]) * r_scaled
+
+# Combine into RGB raster
+r_rgb <- c(r_red, r_green, r_blue)
+names(r_rgb) <- c("red", "green", "blue")
+
+# Convert to 8-bit values
+r_rgb <- round(r_rgb)
+
+# Export GeoTIFF
+writeRaster(
+  r_rgb,
+  "spain_precip_coloured.tif",
+  overwrite = TRUE,
+  datatype = "INT1U"
+)
+
+# Quick preview
+plotRGB(r_rgb)

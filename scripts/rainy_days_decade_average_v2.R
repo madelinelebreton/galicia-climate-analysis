@@ -12,7 +12,7 @@ gc()
 aemet_api_key("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtYWRlbGluZS5sZWJyZXRvbkBnbWFpbC5jb20iLCJqdGkiOiJiMWEzODZjMC03ODc3LTQ4ZDktYmI5ZS05MWU1NDljYzQwNTYiLCJpc3MiOiJBRU1FVCIsImlhdCI6MTc3OTk2MjgwMCwidXNlcklkIjoiYjFhMzg2YzAtNzg3Ny00OGQ5LWJiOWUtOTFlNTQ5Y2M0MDU2Iiwicm9sZSI6IiJ9.dQrIldbr6UOQraZpyDnZR9p2obfU9GRHzuRCCBRs2B0")
 
 
-desired_years <- 80
+desired_years <- 60
 
 # -----------------------------
 # LIBRARIES
@@ -30,16 +30,13 @@ library(lubridate)
 stations <- aemet_stations()
 
 santiago <- stations %>%
-  filter(grepl("SANTIAGO DE COMPOSTELA", nombre, ignore.case = TRUE)) %>%
-  slice(1)
-
-station_id <- santiago$indicativo
+  filter(indicativo == "1428")
 
 # -----------------------------
 # DOWNLOAD MONTHLY DATA
 # -----------------------------
 clim <- aemet_monthly_period(
-  station = station_id,
+  station = santiago$indicativo,
   start = year(Sys.Date()) - desired_years,
   end = year(Sys.Date())
 )
@@ -62,65 +59,68 @@ dataframe <- clim %>%
   
 
 # -----------------------------
+# PERIOD AVERAGES
+# -----------------------------
+monthly_periods <- dataframe %>%
+  mutate(
+    period = case_when(
+      year >= 1976 & year <= 2005 ~ "1976-2005",
+      year >= 2006 & year <= 2015 ~ "2006-2015",
+      year >= 2016 & year <= 2025 ~ "2016-2025",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(period)) %>%
+  group_by(period, month) %>%
+  summarise(
+    avg_rainy_days = mean(num_rainy_days, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# -----------------------------
 # PLOT
 # -----------------------------
-monthly_average <- dataframe %>%
-  group_by(month) %>%
-  summarise(avg_rainy_days = mean(num_rainy_days, na.rm = TRUE))
-
-
 p <- ggplot(
-  dataframe,
+  monthly_periods,
   aes(
     x = month,
-    y = num_rainy_days,
-    group = year,
-    colour = year
+    y = avg_rainy_days,
+    colour = period,
+    group = period
   )
 ) +
-  geom_line(alpha = 0.9, linewidth = 0.8) +
-  scale_colour_gradient(
-    low = "grey85",
-    high = "#2105c0"
-  ) +
+  geom_line(linewidth = 1.4) +
+  geom_point(size = 2.5) +
+  
   scale_x_continuous(
     breaks = 1:12,
     labels = month.abb
   ) +
+  
   scale_y_continuous(
-    limits = c(0, 50),
-   ) +
-  labs(
-    title = "Monthly rainy days with average – Santiago de Compostela",
-    subtitle = paste0(
-      "Last ", desired_years, " years (", year(Sys.Date()) - desired_years, "–", year(Sys.Date()), ")"
-    ),
-    x = "Month",
-    y = "Number of rainy days",
-    colour = "Year",
-    caption = "Source: AEMET OpenData via climaemet"
+    limits = c(0, 30)
   ) +
+  
+  scale_colour_manual(
+    values = c(
+      "1976-2005" = "grey60",
+      "2006-2015" = "#6baed6",
+      "2016-2025" = "#08306b"
+    )
+  ) +
+  
+  labs(
+    title = "Average Monthly Rainy Days in Santiago de Compostela",
+    subtitle = "Comparison of climate periods",
+    x = "Month",
+    y = "Average Number of Rainy Days",
+    colour = "Period"
+  ) +
+  
   theme_minimal() +
   theme(
     plot.title = element_text(face = "bold"),
     axis.text.x = element_text(angle = 45, hjust = 1)
-  ) +
-  geom_line(
-    data = monthly_average,
-    aes(x = month, y = avg_rainy_days),
-    inherit.aes = FALSE,
-    colour = "red",
-    linewidth = 1.5
   )
 
-
-# -----------------------------
-# EXPORT
-# -----------------------------
-ggsave(
-  "C:\\Users\\Equipo\\Documents\\ss_ML_local\\galicia-climate-analysis\\outputs\\plots\\santiago_num_rainy_days_100y_with_monthly_averages.png",
-  p,
-  dpi = 300
-)
-
-print("Done! Plot saved to outputs/plots/santiago_num_rainy_days_80y.png")
+print(p)

@@ -12,7 +12,7 @@ gc()
 aemet_api_key("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtYWRlbGluZS5sZWJyZXRvbkBnbWFpbC5jb20iLCJqdGkiOiJiMWEzODZjMC03ODc3LTQ4ZDktYmI5ZS05MWU1NDljYzQwNTYiLCJpc3MiOiJBRU1FVCIsImlhdCI6MTc3OTk2MjgwMCwidXNlcklkIjoiYjFhMzg2YzAtNzg3Ny00OGQ5LWJiOWUtOTFlNTQ5Y2M0MDU2Iiwicm9sZSI6IiJ9.dQrIldbr6UOQraZpyDnZR9p2obfU9GRHzuRCCBRs2B0")
 
 
-desired_years <- 80
+desired_years <- 60
 
 # -----------------------------
 # LIBRARIES
@@ -64,63 +64,56 @@ dataframe <- clim %>%
 # -----------------------------
 # PLOT
 # -----------------------------
-monthly_average <- dataframe %>%
-  group_by(month) %>%
-  summarise(avg_rainy_days = mean(num_rainy_days, na.rm = TRUE))
+monthly_decades <- dataframe %>%
+  mutate(
+    decade = floor(year / 10) * 10
+  ) %>%
+  group_by(decade, month) %>%
+  summarise(
+    avg_thunder_days = mean(num_thunder_days, na.rm = TRUE),
+    .groups = "drop"
+  )
 
+n_decades <- length(unique(monthly_decades$decade))
 
-p <- ggplot(
-  dataframe,
+p <-ggplot(
+  monthly_decades,
   aes(
-    x = month,
-    y = num_rainy_days,
-    group = year,
-    colour = year
+    x      = month,
+    y      = avg_thunder_days,
+    colour = factor(decade),
+    group  = decade
   )
 ) +
-  geom_line(alpha = 0.9, linewidth = 0.8) +
-  scale_colour_gradient(
-    low = "grey85",
-    high = "#2105c0"
-  ) +
+  geom_line(linewidth = 1.2) +
+  geom_point() +
   scale_x_continuous(
     breaks = 1:12,
     labels = month.abb
   ) +
   scale_y_continuous(
-    limits = c(0, 50),
+    limits = c(0, 10),
    ) +
+  scale_colour_manual(
+    values = colorRampPalette(c("#c6dbef", "#08306b"))(n_decades)
+  ) +
+  guides(colour = guide_legend(reverse = TRUE)) +
   labs(
-    title = "Monthly rainy days with average – Santiago de Compostela",
-    subtitle = paste0(
-      "Last ", desired_years, " years (", year(Sys.Date()) - desired_years, "–", year(Sys.Date()), ")"
-    ),
-    x = "Month",
-    y = "Number of rainy days",
-    colour = "Year",
-    caption = "Source: AEMET OpenData via climaemet"
+    title  = "Average Monthly Thunderstorm Days by Decade",
+    x      = "Month",
+    y      = "Average Number of Thunderstorm Days",
+    colour = "Decade"
   ) +
   theme_minimal() +
-  theme(
-    plot.title = element_text(face = "bold"),
-    axis.text.x = element_text(angle = 45, hjust = 1)
-  ) +
-  geom_line(
-    data = monthly_average,
-    aes(x = month, y = avg_rainy_days),
-    inherit.aes = FALSE,
-    colour = "red",
-    linewidth = 1.5
-  )
-
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # -----------------------------
 # EXPORT
 # -----------------------------
 ggsave(
-  "C:\\Users\\Equipo\\Documents\\ss_ML_local\\galicia-climate-analysis\\outputs\\plots\\santiago_num_rainy_days_100y_with_monthly_averages.png",
+  "C:\\Users\\Equipo\\Documents\\ss_ML_local\\galicia-climate-analysis\\outputs\\plots\\santiago_num_thunder_days_60y_decade_averages.png",
   p,
   dpi = 300
 )
 
-print("Done! Plot saved to outputs/plots/santiago_num_rainy_days_80y.png")
+print("Done! Plot saved to outputs/plots/santiago_num_thunder_days_60y_decade_averages.png")

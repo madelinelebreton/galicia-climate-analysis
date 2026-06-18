@@ -141,7 +141,7 @@ write_csv(
 # PLOT
 # -----------------------------
 p <- ggplot(
-  winter_precip,
+  summer_precip,
   aes(
     x = year,
     y = anomaly_mm,
@@ -164,12 +164,12 @@ p <- ggplot(
     breaks = seq(1976, 2025, by = 5)
   ) +
   labs(
-    title = "Winter Precipitation Anomalies",
+    title = "Summer Precipitation Anomalies",
     subtitle = paste0(
       "A Coruña (Station 1387)\n",
       "Reference period: 1976–2025\n",
-      "Mean winter precipitation = ",
-      round(mean_winter_precip, 1),
+      "Mean summer precipitation = ",
+      round(mean_summer_precip, 1),
       " mm"
     ),
     x = "Year",
@@ -195,7 +195,7 @@ ggsave(
 )
 
 cat(
-  "\nMean winter precipitation (1976–2025):",
-  round(mean_winter_precip, 1),
+  "\nMean summer precipitation (1976–2025):",
+  round(mean_summer_precip, 1),
   "mm\n"
 )

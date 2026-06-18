@@ -48,8 +48,8 @@ stations <- data.frame(
 # YEARS TO ANALYZE
 # =========================================================
 
-start_date <- "1976-01-01"
-end_date   <- "2025-12-31"
+start_date <- "2019-01-01"
+end_date   <- "2024-12-31"
 
 # =========================================================
 # DOWNLOAD ANNUAL CLIMATOLOGY DATA
@@ -57,30 +57,25 @@ end_date   <- "2025-12-31"
 
 all_data <- list()
 
-for (i in seq_len(nrow(stations))) {
+for(i in seq_len(nrow(stations))) {
 
-  cat("\nDownloading:", stations$province[i], "(", stations$station[i], ")\n")
-
-  station_data <- tryCatch(
-    {
-      aemet_monthly_period(
-        station = stations$station[i],
-        start = 1976,
-        end = 2025
-      )
-    },
-    error = function(e) {
-      message("No data for ", stations$station[i])
-      return(NULL)
-    }
+  cat(
+    "\nDownloading:",
+    stations$province[i],
+    "(",
+    stations$station[i],
+    ")\n"
   )
 
-  # skip if no data returned
-  if (is.null(station_data) || nrow(station_data) == 0) next
+  station_data <- aemet_monthly_period(
+    station = stations$station[i],
+    start = 2019,
+    end = 2024
+  )
 
   station_data$province <- stations$province[i]
 
-  all_data[[length(all_data) + 1]] <- station_data
+  all_data[[i]] <- station_data
 }
 
 df <- bind_rows(all_data)
@@ -106,7 +101,7 @@ df <- df %>%
 annual <- df %>%
   group_by(province, year) %>%
   summarise(
-    annual_prec_mm = sum(p_mes, na.rm = TRUE),
+    annual_prec_mm = sum(p_mes, na.rm = TRUE)/365, # convert to daily average
     .groups = "drop"
   )
 
@@ -116,7 +111,7 @@ annual <- df %>%
 
 write_csv(
   annual,
-  "C:\\Users\\Equipo\\Documents\\ss_ML_local\\galicia-climate-analysis\\outputs\\annual_precipitation_galicia_2019_2024.csv"
+  "C:\\Users\\Equipo\\Documents\\ss_ML_local\\galicia-climate-analysis\\outputs\\annual_precipitation_galicia_daily_avg2019_2024.csv"
 )
 
 # =========================================================
@@ -134,13 +129,13 @@ p <- ggplot(
   geom_line(linewidth = 1.2) +
   geom_point(size = 3) +
   scale_x_continuous(
-    breaks = 1976:2025
+    breaks = 2019:2024
   ) +
   labs(
-    title = "Annual Precipitation Totals in Galicia",
+    title = "Annual Precipitation Totals in Galicia, Daily Averages",
     subtitle = "Representative AEMET station for each province",
     x = "Year",
-    y = "Annual precipitation (mm)",
+    y = "Average daily precipitation (mm)",
     color = "Province"
   ) +
   theme_minimal(base_size = 14)
@@ -152,7 +147,7 @@ print(p)
 # =========================================================
 
 ggsave(
-  filename = "annual_precipitation_galicia_2019_2024.png",
+  filename = "annual_precipitation_galicia_daily_avg_2019_2024.png",
   plot = p,
   width = 10,
   height = 6,
