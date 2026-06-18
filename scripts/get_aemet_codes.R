@@ -106,3 +106,15 @@ write.csv(
 
 unique_stations <- unique(results$station_id)
 print(unique_stations)
+
+unique_stations_df <- stations %>%
+  filter(indicativo %in% unique_stations)
+print(unique_stations_df, n=Inf)
+
+write.table(
+  unique_stations_df,
+  "clipboard",
+  sep = "\t",
+  row.names = FALSE,
+  quote = FALSE
+)
