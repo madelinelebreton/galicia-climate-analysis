@@ -13,6 +13,7 @@ library(purrr)
 library(readxl)
 library(tidyr)
 library(writexl)
+library(ggplot2)
 aemet_api_key("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtYWRlbGluZS5sZWJyZXRvbkBnbWFpbC5jb20iLCJqdGkiOiJiMWEzODZjMC03ODc3LTQ4ZDktYmI5ZS05MWU1NDljYzQwNTYiLCJpc3MiOiJBRU1FVCIsImlhdCI6MTc3OTk2MjgwMCwidXNlcklkIjoiYjFhMzg2YzAtNzg3Ny00OGQ5LWJiOWUtOTFlNTQ5Y2M0MDU2Iiwicm9sZSI6IiJ9.dQrIldbr6UOQraZpyDnZR9p2obfU9GRHzuRCCBRs2B0")
 
 #------------------------------------
@@ -151,18 +152,23 @@ fetch_station_precip <- function(station_id, start_year = 1997, end_year = 2026)
 }
 
 # Fetch for all 24 unique stations (with a small delay to respect rate limits)
-all_precip_long <- map_dfr(unique_stations, function(sid) {
+all_precip_long_raw <- map_dfr(unique_stations, function(sid) {
   Sys.sleep(0.3)
   fetch_station_precip(sid)
 })
 
 # Add station name from the stations table
-all_precip_long <- all_precip_long %>%
+all_precip_long <- all_precip_long_raw %>%
+  filter(month != "13") %>% # remove row for annual total
   left_join( # keep all stations, even if some have no data
-    stations %>% select(indicativo, nombre),
+    stations %>% select(indicativo, nombre), 
     by = c("station_id" = "indicativo")
   ) %>%
-  relocate(station_id, nombre, year, month, precip_mm)
+  relocate(station_id, nombre.x, year, month, precip_mm) %>%
+  mutate(
+    date = paste0(year, "-", month, "-01"),
+    col_id = paste0(nombre.x, " (", station_id, ")")) %>%
+  select(col_id, year, month, date, precip_mm)
 
 #------------------------------------
 # Wide format: rows = station × year, cols = Jan–Dec
@@ -246,3 +252,19 @@ write_xlsx(
 )
 
 message("Exported: ", out_path)
+
+
+#------------------------------------
+# Validate: check precip_mm values
+#------------------------------------
+
+all_precip_long %>%
+  ggplot(aes(x = date, y = precip_mm, group=col_id)) +
+  geom_line(color = "steelblue", linewidth = 0.4) +
+  facet_wrap(~ col_id, ncol = 3) +
+  theme_minimal() +
+  labs(
+    title = "Monthly Precipitation by Station",
+    x = "Time",
+    y = "Precipitation (mm)"
+  )
