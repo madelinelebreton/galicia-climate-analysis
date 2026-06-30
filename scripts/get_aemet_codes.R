@@ -11,6 +11,7 @@ library(dplyr)
 library(tidygeocoder)
 library(purrr)
 library(readxl)
+library(readr)
 aemet_api_key("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtYWRlbGluZS5sZWJyZXRvbkBnbWFpbC5jb20iLCJqdGkiOiJiMWEzODZjMC03ODc3LTQ4ZDktYmI5ZS05MWU1NDljYzQwNTYiLCJpc3MiOiJBRU1FVCIsImlhdCI6MTc3OTk2MjgwMCwidXNlcklkIjoiYjFhMzg2YzAtNzg3Ny00OGQ5LWJiOWUtOTFlNTQ5Y2M0MDU2Iiwicm9sZSI6IiJ9.dQrIldbr6UOQraZpyDnZR9p2obfU9GRHzuRCCBRs2B0")
 
 #------------------------------------
@@ -98,7 +99,7 @@ results %>%
   ) %>%
   arrange(distance_km)
 
-write.csv(
+write_excel_csv(
   results,
   "C:\\Users\\Equipo\\Documents\\ss_ML_local\\galicia-climate-analysis\\outputs\\municipios_aemet_stations.csv",
   row.names = FALSE

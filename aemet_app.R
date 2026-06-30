@@ -202,8 +202,8 @@ ui <- page_navbar(
                   uiOutput("fetch_button_ui"),
                   uiOutput("fetch_status"),
                   hr(),
-                  uiOutput("fetch_progress_ui")
-                  p("Be patient - the AEMET API is limited to 50 requests per minute."),
+                  uiOutput("fetch_progress_ui"),
+                  p("Be patient - the AEMET API is limited to 50 requests per minute.")
                 )
               ),
               

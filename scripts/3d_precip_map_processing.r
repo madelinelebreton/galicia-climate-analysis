@@ -63,7 +63,7 @@ r_rgb <- round(r_rgb)
 # Export GeoTIFF
 writeRaster(
   r_rgb,
-  "spain_precip_coloured.tif",
+  "spain_precip_coloured_2.tif",
   overwrite = TRUE,
   datatype = "INT1U"
 )

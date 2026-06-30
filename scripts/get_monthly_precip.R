@@ -14,7 +14,7 @@ library(readxl)
 library(tidyr)
 library(writexl)
 library(ggplot2)
-aemet_api_key("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtYWRlbGluZS5sZWJyZXRvbkBnbWFpbC5jb20iLCJqdGkiOiJiMWEzODZjMC03ODc3LTQ4ZDktYmI5ZS05MWU1NDljYzQwNTYiLCJpc3MiOiJBRU1FVCIsImlhdCI6MTc3OTk2MjgwMCwidXNlcklkIjoiYjFhMzg2YzAtNzg3Ny00OGQ5LWJiOWUtOTFlNTQ5Y2M0MDU2Iiwicm9sZSI6IiJ9.dQrIldbr6UOQraZpyDnZR9p2obfU9GRHzuRCCBRs2B0")
+aemet_api_key("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtYWRlbGluZS5sZWJyZXRvbkBnbWFpbC5jb20iLCJqdGkiOiJmZTg2ZmNjZC1hNTUwLTQzZmItOTc2ZC1mODk0MzA2NjIzYWYiLCJpc3MiOiJBRU1FVCIsImlhdCI6MTc4MjcyMDIyNywidXNlcklkIjoiZmU4NmZjY2QtYTU1MC00M2ZiLTk3NmQtZjg5NDMwNjYyM2FmIiwicm9sZSI6IiJ9.3BYn_SM55wmwxBw_yJ_TTK-OipcbeF4Yaj2u5Y6Kgrg")
 
 #------------------------------------
 # Load AEMET stations
@@ -169,6 +169,15 @@ all_precip_long <- all_precip_long_raw %>%
     date = paste0(year, "-", month, "-01"),
     col_id = paste0(nombre.x, " (", station_id, ")")) %>%
   select(col_id, year, month, date, precip_mm)
+
+write.table(
+    all_precip_long,
+    "clipboard",
+    sep = "\t", 
+    row.names = FALSE,
+    quote = FALSE
+)
+
 
 #------------------------------------
 # Wide format: rows = station × year, cols = Jan–Dec
