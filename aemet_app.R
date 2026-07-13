@@ -527,7 +527,7 @@ server <- function(input, output, session) {
                   by = c("station_id" = "indicativo")) %>%
         mutate(
           date   = as.Date(paste0(year, "-", sprintf("%02d", month), "-01")),
-          col_id = paste0(nombre, " (", station_id, ")")
+          col_id = paste0(nombre, "\n(", station_id, ")")
         ) %>%
         select(col_id, station_id, nombre, year, month, date, value)
       
@@ -543,6 +543,11 @@ server <- function(input, output, session) {
           names_sort  = FALSE
         )
       
+      # Guarantee all 12 month columns exist, even for incomplete years
+      missing_months <- setdiff(month_labels, names(wide_base))
+      if (length(missing_months) > 0) {
+        wide_base[missing_months] <- NA_real_
+      }
       # Append aggregations safely only if dealing with purely numerical profiles
       if (is_numeric_var()) {
         wide_base <- wide_base %>%
